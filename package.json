@@ -1,0 +1,146 @@
+{
+  "name": "mitm-vscode",
+  "displayName": "MITM Network Interceptor",
+  "description": "Intercept and block network requests made by VS Code and its extensions",
+  "version": "0.1.0",
+  "publisher": "ikirifqi",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ikirifqi/mitm-vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/ikirifqi/mitm-vscode/issues"
+  },
+  "homepage": "https://github.com/ikirifqi/mitm-vscode#readme",
+  "keywords": [
+    "mitm",
+    "proxy",
+    "network",
+    "intercept",
+    "telemetry",
+    "analytics",
+    "blocker",
+    "mitmproxy",
+    "privacy"
+  ],
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "This extension requires trusted workspace to manage proxy settings."
+    }
+  },
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "mitm-vscode.enable",
+        "title": "MITM: Enable Interception"
+      },
+      {
+        "command": "mitm-vscode.disable",
+        "title": "MITM: Disable Interception"
+      },
+      {
+        "command": "mitm-vscode.reload",
+        "title": "MITM: Reload Blacklist"
+      },
+      {
+        "command": "mitm-vscode.showLogs",
+        "title": "MITM: Show Logs"
+      },
+      {
+        "command": "mitm-vscode.installCertificate",
+        "title": "MITM: Install Certificate (One-time Setup)"
+      },
+      {
+        "command": "mitm-vscode.cleanup",
+        "title": "MITM: Cleanup Proxy Settings"
+      }
+    ],
+    "configuration": {
+      "title": "MITM Network Interceptor",
+      "properties": {
+        "mitm-vscode.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable network interception"
+        },
+        "mitm-vscode.proxyPort": {
+          "type": "number",
+          "default": 8866,
+          "description": "Port for the local proxy server"
+        },
+        "mitm-vscode.blacklistPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to blacklist configuration file in JSON format (leave empty for default)"
+        },
+        "mitm-vscode.blockedResponseStatus": {
+          "type": "number",
+          "default": 204,
+          "enum": [200, 204, 404, 503],
+          "enumDescriptions": [
+            "200 OK - Success with empty body",
+            "204 No Content - Success with no body",
+            "404 Not Found - Resource not found",
+            "503 Service Unavailable - Service unavailable"
+          ],
+          "description": "HTTP status code to return for blocked requests"
+        },
+        "mitm-vscode.blockedResponseBody": {
+          "type": "string",
+          "default": "",
+          "description": "Optional response body for blocked requests (JSON string)"
+        },
+        "mitm-vscode.logBlocked": {
+          "type": "boolean",
+          "default": true,
+          "description": "Log blocked requests to output channel"
+        },
+        "mitm-vscode.showBlockedNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show toast notifications for blocked requests (can be noisy)"
+        },
+        "mitm-vscode.mitmproxyPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to mitmproxy executable (leave empty for auto-detect)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "package": "npx vsce package --no-dependencies",
+    "publish": "npx vsce publish --no-dependencies",
+    "prepublish": "npm run lint && npm run format:check"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {}
+}

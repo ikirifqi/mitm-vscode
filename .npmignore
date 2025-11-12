@@ -1,0 +1,16 @@
+.vscode/
+.vscode-test/
+src/
+.gitignore
+.gitattributes
+.editorconfig
+.prettierrc
+.prettierignore
+.eslintrc.json
+tsconfig.json
+*.md
+!README.md
+test-*.js
+coverage/
+*.log
+.DS_Store

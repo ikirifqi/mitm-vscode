@@ -1,0 +1,90 @@
+{
+  "patterns": [
+    {
+      "type": "domain",
+      "value": "dc.services.visualstudio.com",
+      "description": "VS Code telemetry"
+    },
+    {
+      "type": "domain",
+      "value": "vortex.data.microsoft.com",
+      "description": "Microsoft Vortex telemetry"
+    },
+    {
+      "type": "domain",
+      "value": "mobile.events.data.microsoft.com",
+      "description": "Microsoft events"
+    },
+    {
+      "type": "domain",
+      "value": "v10.events.data.microsoft.com",
+      "description": "Microsoft events v10"
+    },
+    {
+      "type": "domain",
+      "value": "google-analytics.com",
+      "description": "Google Analytics"
+    },
+    {
+      "type": "domain",
+      "value": "analytics.google.com",
+      "description": "Google Analytics"
+    },
+    {
+      "type": "regex",
+      "value": ".*\\.google-analytics\\.com",
+      "description": "Google Analytics subdomains"
+    },
+    {
+      "type": "path",
+      "value": "/telemetry",
+      "description": "Generic telemetry endpoint"
+    },
+    {
+      "type": "path",
+      "value": "/analytics",
+      "description": "Generic analytics endpoint"
+    },
+    {
+      "type": "path",
+      "value": "/track",
+      "description": "Generic tracking endpoint"
+    },
+    {
+      "type": "regex",
+      "value": ".*/v1/telemetry.*",
+      "description": "Versioned telemetry endpoints"
+    },
+    {
+      "type": "domain",
+      "value": "mixpanel.com",
+      "description": "Mixpanel analytics"
+    },
+    {
+      "type": "domain",
+      "value": "segment.io",
+      "description": "Segment analytics"
+    },
+    {
+      "type": "domain",
+      "value": "segment.com",
+      "description": "Segment analytics"
+    },
+    {
+      "type": "regex",
+      "value": ".*\\.amplitude\\.com",
+      "description": "Amplitude analytics"
+    },
+    {
+      "type": "path",
+      "value": "/batch",
+      "description": "Batch tracking endpoints"
+    },
+    {
+      "type": "path",
+      "value": "/collect",
+      "description": "Collection endpoints"
+    }
+  ]
+}
+

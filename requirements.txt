@@ -1,0 +1,5 @@
+# Python dependencies for mitmproxy addon
+# Install with: pip install -r requirements.txt
+# Note: No additional Python dependencies required - uses only built-in libraries (json, re)
+
+mitmproxy>=10.0.0

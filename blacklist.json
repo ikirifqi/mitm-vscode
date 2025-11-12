@@ -1,0 +1,34 @@
+{
+  "patterns": [
+    {
+      "type": "path",
+      "value": "/analytics",
+      "description": "Block analytics endpoints"
+    },
+    {
+      "type": "path",
+      "value": "/telemetry",
+      "description": "Block telemetry endpoints"
+    },
+    {
+      "type": "regex",
+      "value": ".*/(analytics|telemetry)/.*",
+      "description": "Block analytics/telemetry paths"
+    },
+    {
+      "type": "path",
+      "value": "analytics/send_batches",
+      "description": "Block batch analytics"
+    },
+    {
+      "type": "domain",
+      "value": "dc.services.visualstudio.com",
+      "description": "VS Code telemetry"
+    },
+    {
+      "type": "domain",
+      "value": "vortex.data.microsoft.com",
+      "description": "Microsoft telemetry"
+    }
+  ]
+}

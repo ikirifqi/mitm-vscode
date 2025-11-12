@@ -1,0 +1,21 @@
+out
+node_modules
+.vscode-test/
+*.vsix
+.DS_Store
+*.log
+.mitm-logs/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+.vscode/settings.json
+.history/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python

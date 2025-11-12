@@ -1,0 +1,70 @@
+{
+  "patterns": [
+    {
+      "type": "domain",
+      "value": "doubleclick.net",
+      "description": "Google DoubleClick"
+    },
+    {
+      "type": "regex",
+      "value": ".*\\.doubleclick\\.net",
+      "description": "DoubleClick subdomains"
+    },
+    {
+      "type": "domain",
+      "value": "googlesyndication.com",
+      "description": "Google AdSense"
+    },
+    {
+      "type": "domain",
+      "value": "adservice.google.com",
+      "description": "Google Ad Services"
+    },
+    {
+      "type": "path",
+      "value": "/ads/",
+      "description": "Ad content paths"
+    },
+    {
+      "type": "path",
+      "value": "/ad/",
+      "description": "Ad content paths"
+    },
+    {
+      "type": "path",
+      "value": "/advert",
+      "description": "Advertisement paths"
+    },
+    {
+      "type": "regex",
+      "value": ".*/ad[sz]?/.*",
+      "description": "Ad URL patterns"
+    },
+    {
+      "type": "path",
+      "value": "/pixel",
+      "description": "Tracking pixels"
+    },
+    {
+      "type": "path",
+      "value": "/beacon",
+      "description": "Tracking beacons"
+    },
+    {
+      "type": "regex",
+      "value": ".*\\.ads\\..*",
+      "description": "Ad subdomains"
+    },
+    {
+      "type": "regex",
+      "value": ".*\\.adserver\\..*",
+      "description": "Ad server domains"
+    },
+    {
+      "type": "regex",
+      "value": ".*ad[sz]?\\d*\\..*",
+      "description": "Numbered ad domains"
+    }
+  ]
+}
+

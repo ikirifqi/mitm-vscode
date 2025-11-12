@@ -1,0 +1,87 @@
+{
+  "patterns": [
+    {
+      "type": "exact",
+      "value": "https://example.com/api/track",
+      "description": "Block exact tracking endpoint"
+    },
+    {
+      "type": "exact",
+      "value": "https://api.example.com/v1/events",
+      "description": "Block exact events endpoint"
+    },
+    {
+      "type": "domain",
+      "value": "tracking.example.com",
+      "description": "Block tracking subdomain"
+    },
+    {
+      "type": "domain",
+      "value": "telemetry.myapp.com",
+      "description": "Block app telemetry"
+    },
+    {
+      "type": "path",
+      "value": "/api/analytics",
+      "description": "Block analytics API paths"
+    },
+    {
+      "type": "path",
+      "value": "/metrics/send",
+      "description": "Block metrics endpoints"
+    },
+    {
+      "type": "path",
+      "value": "analytics/send_batches",
+      "description": "Block batch analytics (no leading slash)"
+    },
+    {
+      "type": "regex",
+      "value": "https?://analytics\\..*",
+      "description": "Any analytics subdomain"
+    },
+    {
+      "type": "regex",
+      "value": ".*/v\\d+/(analytics|telemetry)/.*",
+      "description": "Versioned analytics/telemetry APIs"
+    },
+    {
+      "type": "regex",
+      "value": ".*\\.(analytics|tracking|ads)\\..*",
+      "description": "Block analytics/tracking/ads subdomains"
+    },
+    {
+      "type": "regex",
+      "value": ".*[?&](track|analytics|telemetry)=.*",
+      "description": "URLs with tracking query params"
+    }
+  ],
+  "_comments": {
+    "pattern_types": [
+      "exact - Match complete URL exactly",
+      "domain - Match domain and all subdomains",
+      "path - Match anywhere in URL path",
+      "regex - Regular expression pattern (Python syntax)"
+    ],
+    "tips": [
+      "Start with simple patterns (domain, path) and test",
+      "Use regex for complex patterns only",
+      "Test your regex at https://regex101.com (Python flavor)",
+      "Use descriptive descriptions for easier debugging",
+      "Reload blacklist after changes: MITM: Reload Blacklist"
+    ],
+    "testing": [
+      "Enable logging: mitm-vscode.logBlocked = true",
+      "Run: MITM: Show Logs",
+      "Make a test request",
+      "Check if it's blocked in logs"
+    ],
+    "regex_examples": {
+      "any_protocol": "https?://example\\.com/.*",
+      "multiple_domains": ".*(example|test|demo)\\.com.*",
+      "paths_with_numbers": ".*/track/\\d+/.*",
+      "file_extensions": ".*\\.(gif|png)\\?track.*",
+      "case_insensitive": "(?i).*analytics.*"
+    }
+  }
+}
