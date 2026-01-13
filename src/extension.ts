@@ -322,7 +322,7 @@ The certificate will be generated automatically when you first start the interce
 
 async function createDefaultBlacklist(context: vscode.ExtensionContext): Promise<void> {
   const config = ConfigManager.getProxyConfig(context);
-  const defaultBlacklistPath = require('path').join(context.extensionPath, 'blacklist.yaml');
+  const defaultBlacklistPath = require('path').join(context.extensionPath, 'blacklist.json');
 
   try {
     // Copy default blacklist to configured location

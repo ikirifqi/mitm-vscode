@@ -344,7 +344,7 @@ export class ProxyManager {
         });
 
         // Handle process errors
-        this.process!.on('error', (error: any) => {
+        this.process!.on('error', (error: Error & { code?: string }) => {
           clearTimeout(timeout);
           this.outputChannel.appendLine(`[MITM] Process error: ${error.message}`);
           this.process = null;
@@ -633,7 +633,7 @@ export class ProxyManager {
       const net = require('net');
       const tester = net
         .createServer()
-        .once('error', (err: any) => {
+        .once('error', (err: Error & { code?: string }) => {
           if (err.code === 'EADDRINUSE') {
             resolve(true);
           } else {
