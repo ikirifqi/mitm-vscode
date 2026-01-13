@@ -178,8 +178,8 @@ class NetworkInterceptor:
             self.stats["blocked"] += 1
 
             if self.log_blocked:
-                ctx.log.info(f"[BLOCKED] {flow.request.method} {url}")
-                ctx.log.info(f"  Reason: {reason}")
+                # Clean one-liner format for blocked
+                ctx.log.info(f"[⛔ BLOCKED] {method} {url} (Reason: {reason})")
 
             # Create response without making actual request
             flow.response = http.Response.make(
@@ -193,6 +193,10 @@ class NetworkInterceptor:
             )
         else:
             self.stats["allowed"] += 1
+
+            if self.log_blocked:
+                # Clean one-liner format for allowed
+                ctx.log.info(f"{method} {url}")
 
     def done(self):
         """Called when addon is unloaded"""

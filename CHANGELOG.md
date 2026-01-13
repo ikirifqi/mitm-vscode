@@ -5,6 +5,21 @@ All notable changes to the "MITM Network Interceptor" extension will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-01-13
+
+### Changed
+- **Cleaner logs**: Reduced verbose mitmproxy output with `termlog_verbosity=error`
+- Blocked requests show as clean one-liner: `[⛔ BLOCKED] METHOD URL (Reason: ...)`
+- Allowed requests show as clean one-liner: `METHOD URL`
+- Removed mitmproxy's verbose connection logs (client/server disconnect messages)
+- Removed duplicate "127.0.0.1:port" output on each request
+
+### Improved
+- Logs are now easy to scan and read
+- Less noise, more signal
+- Both blocked and allowed requests visible
+- One line per request (not 3-5 lines)
+
 ## [0.2.1] - 2025-01-13
 
 ### Fixed

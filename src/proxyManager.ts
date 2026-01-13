@@ -257,7 +257,8 @@ export class ProxyManager {
       '-s',
       addonPath,
       '--ssl-insecure',
-      '--quiet', // Reduce mitmproxy's verbose output
+      '--set',
+      'termlog_verbosity=error', // Only show errors from mitmproxy itself
     ];
 
     this.outputChannel.appendLine(`[MITM] Starting proxy on port ${config.port}...`);
