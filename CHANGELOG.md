@@ -5,6 +5,13 @@ All notable changes to the "MITM Network Interceptor" extension will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-01-13
+
+### Fixed
+- **Critical**: Fixed `NameError: name 'method' is not defined` in Python addon
+- Method variable was used but not defined, causing errors on every request
+- Both blocked and allowed request logging now work correctly
+
 ## [0.2.2] - 2025-01-13
 
 ### Changed

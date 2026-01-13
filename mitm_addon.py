@@ -164,6 +164,7 @@ class NetworkInterceptor:
         """
         url = flow.request.pretty_url
         host = flow.request.host
+        method = flow.request.method
 
         # Get request body (if available)
         try:
