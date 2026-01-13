@@ -58,10 +58,7 @@ export class ProxyManager {
               this.outputChannel.appendLine('[MITM] ✓ Proxy logs will appear here');
 
               vscode.window
-                .showInformationMessage(
-                  'MITM: This window took over proxy ownership',
-                  'Show Logs'
-                )
+                .showInformationMessage('MITM: This window took over proxy ownership', 'Show Logs')
                 .then((action) => {
                   if (action === 'Show Logs') {
                     this.outputChannel.show(true);
@@ -74,11 +71,17 @@ export class ProxyManager {
           const isOrphaned = await this.isProxyOrphaned(config.port);
 
           if (isOrphaned) {
-            this.outputChannel.appendLine('[MITM] ═══════════════════════════════════════════════════');
+            this.outputChannel.appendLine(
+              '[MITM] ═══════════════════════════════════════════════════'
+            );
             this.outputChannel.appendLine('[MITM] Health check: Detected orphaned proxy!');
-            this.outputChannel.appendLine('[MITM] Original owner window closed but process still running');
+            this.outputChannel.appendLine(
+              '[MITM] Original owner window closed but process still running'
+            );
             this.outputChannel.appendLine('[MITM] Killing orphaned process and taking over...');
-            this.outputChannel.appendLine('[MITM] ═══════════════════════════════════════════════════');
+            this.outputChannel.appendLine(
+              '[MITM] ═══════════════════════════════════════════════════'
+            );
             this.outputChannel.show(true);
 
             // Kill orphaned process
@@ -94,14 +97,16 @@ export class ProxyManager {
               this.outputChannel.appendLine('[MITM] ✓ Killed orphaned proxy and took ownership');
               this.outputChannel.appendLine('[MITM] ✓ Proxy logs now appear here');
 
-              vscode.window.showInformationMessage(
-                'MITM: Restarted orphaned proxy - logs now in this window',
-                'Show Logs'
-              ).then((action) => {
-                if (action === 'Show Logs') {
-                  this.outputChannel.show(true);
-                }
-              });
+              vscode.window
+                .showInformationMessage(
+                  'MITM: Restarted orphaned proxy - logs now in this window',
+                  'Show Logs'
+                )
+                .then((action) => {
+                  if (action === 'Show Logs') {
+                    this.outputChannel.show(true);
+                  }
+                });
             }
           }
         } else if (this.ownsProxy()) {
@@ -480,7 +485,12 @@ export class ProxyManager {
         }).trim();
 
         // If parent is not Electron/Code/node, it's orphaned
-        if (!parentName || (!parentName.includes('Electron') && !parentName.includes('Code') && !parentName.includes('node'))) {
+        if (
+          !parentName ||
+          (!parentName.includes('Electron') &&
+            !parentName.includes('Code') &&
+            !parentName.includes('node'))
+        ) {
           return true;
         }
 
