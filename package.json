@@ -2,7 +2,7 @@
   "name": "mitm-vscode",
   "displayName": "MITM Network Interceptor",
   "description": "Intercept and block network requests made by VS Code and its extensions",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "publisher": "ikirifqi",
   "repository": {
     "type": "git",

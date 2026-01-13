@@ -258,7 +258,7 @@ export class ProxyManager {
       addonPath,
       '--ssl-insecure',
       '--set',
-      'termlog_verbosity=error', // Only show errors from mitmproxy itself
+      'console_eventlog_verbosity=error', // Hide flow logs, keep addon logs
     ];
 
     this.outputChannel.appendLine(`[MITM] Starting proxy on port ${config.port}...`);

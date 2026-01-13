@@ -5,6 +5,12 @@ All notable changes to the "MITM Network Interceptor" extension will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2025-01-13
+
+### Fixed
+- Fixed logging visibility: use `console_eventlog_verbosity=error` to hide flow logs while showing addon logs
+- Addon logs (blocked/allowed requests) now visible in output
+
 ## [0.2.3] - 2025-01-13
 
 ### Fixed
