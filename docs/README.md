@@ -9,6 +9,8 @@ Welcome to the MITM Network Interceptor documentation!
 
 ## User Guides
 
+- 🎯 **[Request Body Matching](BODY-MATCHING.md)** - Block or allow by request body content (NEW!)
+- 💤 **[Idle Timeout](IDLE-TIMEOUT.md)** - Auto-stop proxy when inactive (NEW!)
 - 🪟 **[Multi-Window Usage](MULTI-WINDOW.md)** - Using the extension with multiple VS Code windows
 - 🗑️ **[Uninstall Guide](UNINSTALL.md)** - How to cleanly uninstall the extension
 - 📋 **[Updates & Migration](UPDATES.md)** - Migration guide from YAML to JSON format

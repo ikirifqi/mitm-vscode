@@ -5,7 +5,8 @@ A powerful VS Code extension that intercepts and blocks network requests made by
 ## Features
 
 - 🛡️ **Intercept ALL network traffic** from VS Code and its extensions
-- 🚫 **Flexible blacklist patterns**: Support for exact URLs, domains, paths, and regex
+- 🚫 **Flexible blacklist patterns**: Support for exact URLs, domains, paths, regex, and request body matching
+- 🎯 **Request body filtering**: Block or allow requests based on body content (whitelist support)
 - ⚙️ **Configurable responses**: Choose how blocked requests should respond
 - 📊 **Real-time logging**: See what's being blocked in real-time
 - 🔄 **Hot reload**: Update blacklist without restarting the proxy
@@ -13,6 +14,8 @@ A powerful VS Code extension that intercepts and blocks network requests made by
 - 🪟 **Multi-window support**: Works perfectly with multiple VS Code windows (shared proxy instance)
 - ⚡ **Auto-reload**: Window reloads automatically when enabling/disabling (no manual restart)
 - 💚 **Self-healing**: Health check polling ensures proxy is always running (auto-restarts within 5 seconds)
+- 🔄 **Orphaned proxy detection**: Automatically detects and restarts orphaned proxies when owner window closes
+- 💤 **Idle timeout**: Auto-stops proxy after configurable inactivity period (default: 60 minutes, saves resources)
 
 ## Prerequisites
 
@@ -125,6 +128,7 @@ Configure via VS Code Settings (`Preferences > Settings > MITM Network Intercept
 | `mitm-vscode.blockedResponseBody` | string | `""` | Optional response body for blocked requests |
 | `mitm-vscode.logBlocked` | boolean | `true` | Log blocked requests to output channel |
 | `mitm-vscode.showBlockedNotifications` | boolean | `false` | Show toast notifications for blocked requests (can be noisy) |
+| `mitm-vscode.idleTimeout` | number | `60` | Minutes of inactivity before proxy auto-stops (0 = disabled) |
 | `mitm-vscode.mitmproxyPath` | string | `""` | Custom path to mitmproxy executable |
 
 ### Blacklist Configuration
@@ -169,6 +173,24 @@ The blacklist is defined in `blacklist.json` (created automatically if not exist
 }
 ```
 
+5. **Request Body Block**
+```json
+{
+  "type": "body",
+  "value": "telemetryData",
+  "description": "Block requests containing 'telemetryData' in request body"
+}
+```
+
+6. **Request Body Allow (Whitelist)**
+```json
+{
+  "type": "body-allow",
+  "value": "allowedOperation",
+  "description": "Allow requests containing 'allowedOperation' in body (bypasses other blocks)"
+}
+```
+
 #### Example Blacklist
 
 ```json
@@ -203,6 +225,16 @@ The blacklist is defined in `blacklist.json` (created automatically if not exist
       "type": "path",
       "value": "analytics/send_batches",
       "description": "Block batch analytics"
+    },
+    {
+      "type": "body",
+      "value": "sensitiveData",
+      "description": "Block requests with sensitive data in body"
+    },
+    {
+      "type": "body-allow",
+      "value": "trustedClient",
+      "description": "Allow requests from trusted clients (whitelist)"
     }
   ]
 }
@@ -731,6 +763,8 @@ MIT License - See LICENSE file for details
 
 **Quick Access:**
 - 📖 [Quick Start Guide](docs/QUICKSTART.md) - 5-minute setup
+- 🎯 [Request Body Matching](docs/BODY-MATCHING.md) - Block/allow by request body content (NEW in v0.2.0)
+- 💤 [Idle Timeout](docs/IDLE-TIMEOUT.md) - Auto-stop when inactive (NEW in v0.2.0)
 - 🪟 [Multi-Window Guide](docs/MULTI-WINDOW.md) - Multiple windows support
 - 💚 [Health Check System](docs/HEALTH-CHECK.md) - Self-healing explained
 - 🔧 [Development Guide](docs/DEVELOPMENT.md) - Contributing
