@@ -54,6 +54,26 @@
       "type": "regex",
       "value": ".*[?&](track|analytics|telemetry)=.*",
       "description": "URLs with tracking query params"
+    },
+    {
+      "type": "body",
+      "value": "trackingId",
+      "description": "Block requests with 'trackingId' in request body"
+    },
+    {
+      "type": "body",
+      "value": "\"event\":\"pageview\"",
+      "description": "Block pageview events in request body"
+    },
+    {
+      "type": "body-allow",
+      "value": "trustedClient",
+      "description": "Allow requests from trusted clients (whitelist - bypasses all blocks)"
+    },
+    {
+      "type": "body-allow",
+      "value": "internalAPI",
+      "description": "Allow internal API calls even if URL is blacklisted"
     }
   ],
   "_comments": {
@@ -82,6 +102,12 @@
       "paths_with_numbers": ".*/track/\\d+/.*",
       "file_extensions": ".*\\.(gif|png)\\?track.*",
       "case_insensitive": "(?i).*analytics.*"
+    },
+    "body_matching": {
+      "block_by_body": "Use type: 'body' to block requests containing specific strings in request body",
+      "allow_by_body": "Use type: 'body-allow' to whitelist requests with specific body content",
+      "priority": "body-allow patterns are checked FIRST - they bypass all other blocks",
+      "use_case": "Useful for blocking telemetry while allowing legitimate API calls with same URL"
     }
   }
 }

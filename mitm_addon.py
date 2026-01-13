@@ -28,8 +28,8 @@ class BlacklistPattern:
             except re.error as e:
                 ctx.log.error(f"Invalid regex pattern '{value}': {e}")
 
-    def matches(self, url: str, host: str) -> bool:
-        """Check if this pattern matches the given URL"""
+    def matches(self, url: str, host: str, body: str = "") -> bool:
+        """Check if this pattern matches the given URL or request body"""
         if self.type == "exact":
             return url == self.value
         elif self.type == "domain":
@@ -38,6 +38,12 @@ class BlacklistPattern:
             return self.value in url
         elif self.type == "regex" and self.regex:
             return bool(self.regex.search(url))
+        elif self.type == "body":
+            # Block if request body contains this string
+            return self.value in body if body else False
+        elif self.type == "body-allow":
+            # Allow if request body contains this string (checked separately)
+            return self.value in body if body else False
         return False
 
 
@@ -128,15 +134,27 @@ class NetworkInterceptor:
         except Exception as e:
             ctx.log.error(f"Error loading blacklist config: {e}")
 
-    def is_blacklisted(self, url: str, host: str) -> tuple[bool, str]:
+    def is_blacklisted(self, url: str, host: str, body: str = "") -> tuple[bool, str]:
         """
-        Check if URL matches any blacklist pattern
+        Check if URL/body matches any blacklist pattern
         Returns: (is_blocked, reason)
+
+        Priority:
+        1. Check body-allow patterns first (whitelist)
+        2. Then check blocking patterns (including body blocks)
         """
+        # First check if any body-allow patterns match (whitelist)
         for pattern in self.patterns:
-            if pattern.matches(url, host):
+            if pattern.type == "body-allow" and pattern.matches(url, host, body):
+                # Body whitelist matched - explicitly allow
+                return False, ""
+
+        # Then check all blocking patterns (including body blocks)
+        for pattern in self.patterns:
+            if pattern.type != "body-allow" and pattern.matches(url, host, body):
                 reason = pattern.description or f"{pattern.type}: {pattern.value}"
                 return True, reason
+
         return False, ""
 
     def request(self, flow: http.HTTPFlow) -> None:
@@ -147,7 +165,14 @@ class NetworkInterceptor:
         url = flow.request.pretty_url
         host = flow.request.host
 
-        is_blocked, reason = self.is_blacklisted(url, host)
+        # Get request body (if available)
+        try:
+            body = flow.request.get_text() or ""
+        except Exception:
+            # Binary body or decoding error - use empty string
+            body = ""
+
+        is_blocked, reason = self.is_blacklisted(url, host, body)
 
         if is_blocked:
             self.stats["blocked"] += 1

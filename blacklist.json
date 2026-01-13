@@ -29,6 +29,16 @@
       "type": "domain",
       "value": "vortex.data.microsoft.com",
       "description": "Microsoft telemetry"
+    },
+    {
+      "type": "body",
+      "value": "telemetryData",
+      "description": "Block requests with telemetry data in body"
+    },
+    {
+      "type": "body-allow",
+      "value": "allowedOperation",
+      "description": "Allow requests containing allowedOperation in body (whitelist)"
     }
   ]
 }

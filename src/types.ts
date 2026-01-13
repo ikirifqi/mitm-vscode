@@ -3,7 +3,7 @@
  */
 
 export interface BlacklistPattern {
-  type: 'exact' | 'domain' | 'path' | 'regex';
+  type: 'exact' | 'domain' | 'path' | 'regex' | 'body' | 'body-allow';
   value: string;
   description?: string;
 }
@@ -18,6 +18,7 @@ export interface ProxyConfig {
   responseStatus: number;
   responseBody: string;
   logBlocked: boolean;
+  idleTimeout: number;
   mitmproxyPath?: string;
 }
 
