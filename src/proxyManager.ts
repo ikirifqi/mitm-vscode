@@ -67,48 +67,9 @@ export class ProxyManager {
             }
           }
         } else if (portInUse && !this.ownsProxy()) {
-          // Port is in use by another process - check if it's orphaned
-          const isOrphaned = await this.isProxyOrphaned(config.port);
-
-          if (isOrphaned) {
-            this.outputChannel.appendLine(
-              '[MITM] ═══════════════════════════════════════════════════'
-            );
-            this.outputChannel.appendLine('[MITM] Health check: Detected orphaned proxy!');
-            this.outputChannel.appendLine(
-              '[MITM] Original owner window closed but process still running'
-            );
-            this.outputChannel.appendLine('[MITM] Killing orphaned process and taking over...');
-            this.outputChannel.appendLine(
-              '[MITM] ═══════════════════════════════════════════════════'
-            );
-            this.outputChannel.show(true);
-
-            // Kill orphaned process
-            await this.killProcessOnPort(config.port);
-
-            // Wait a bit for port to be released
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            // Start new proxy
-            const started = await this.startProxyProcess(config);
-
-            if (started) {
-              this.outputChannel.appendLine('[MITM] ✓ Killed orphaned proxy and took ownership');
-              this.outputChannel.appendLine('[MITM] ✓ Proxy logs now appear here');
-
-              vscode.window
-                .showInformationMessage(
-                  'MITM: Restarted orphaned proxy - logs now in this window',
-                  'Show Logs'
-                )
-                .then((action) => {
-                  if (action === 'Show Logs') {
-                    this.outputChannel.show(true);
-                  }
-                });
-            }
-          }
+          // Port is in use by another window - this is normal
+          // DON'T kill it - another window owns it
+          // Silent to avoid log spam
         } else if (this.ownsProxy()) {
           // We own the proxy - check if it's still alive
           if (!this.process || this.process.killed) {
@@ -296,6 +257,7 @@ export class ProxyManager {
       '-s',
       addonPath,
       '--ssl-insecure',
+      '--quiet', // Reduce mitmproxy's verbose output
     ];
 
     this.outputChannel.appendLine(`[MITM] Starting proxy on port ${config.port}...`);
@@ -444,83 +406,6 @@ export class ProxyManager {
   }
 
   /**
-   * Check if proxy process is orphaned (owner window closed)
-   * An orphaned proxy has no VS Code window that owns it
-   */
-  private async isProxyOrphaned(port: number): Promise<boolean> {
-    try {
-      if (process.platform === 'win32') {
-        // Windows: harder to detect orphans, skip this check
-        return false;
-      }
-
-      // Get process info for port
-      const { execSync } = require('child_process');
-      const pidOutput = execSync(`lsof -ti :${port} 2>/dev/null || echo ""`, {
-        encoding: 'utf-8',
-      }).trim();
-
-      if (!pidOutput) {
-        return false; // No process on port
-      }
-
-      const pid = parseInt(pidOutput);
-
-      // Check if this PID has any VS Code parent
-      // If the proxy's parent VS Code window closed, proxy becomes orphaned
-      try {
-        const ppidOutput = execSync(`ps -o ppid= -p ${pid} 2>/dev/null || echo ""`, {
-          encoding: 'utf-8',
-        }).trim();
-
-        if (!ppidOutput) {
-          return true; // Can't find parent - likely orphaned
-        }
-
-        const ppid = parseInt(ppidOutput);
-
-        // Check if parent is still running and is a VS Code/Electron process
-        const parentName = execSync(`ps -o comm= -p ${ppid} 2>/dev/null || echo ""`, {
-          encoding: 'utf-8',
-        }).trim();
-
-        // If parent is not Electron/Code/node, it's orphaned
-        if (
-          !parentName ||
-          (!parentName.includes('Electron') &&
-            !parentName.includes('Code') &&
-            !parentName.includes('node'))
-        ) {
-          return true;
-        }
-
-        return false;
-      } catch {
-        // Error checking parent - assume orphaned to be safe
-        return true;
-      }
-    } catch (error) {
-      // Can't determine - assume not orphaned
-      return false;
-    }
-  }
-
-  /**
-   * Kill process on specific port
-   */
-  private async killProcessOnPort(port: number): Promise<void> {
-    try {
-      if (process.platform !== 'win32') {
-        const { execSync } = require('child_process');
-        execSync(`lsof -ti :${port} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
-        this.outputChannel.appendLine(`[MITM] Killed process on port ${port}`);
-      }
-    } catch (error) {
-      this.outputChannel.appendLine(`[MITM] Error killing process: ${error}`);
-    }
-  }
-
-  /**
    * Check if proxy is running (either owned by this window or shared)
    */
   isRunning(): boolean {
@@ -607,26 +492,21 @@ export class ProxyManager {
   }
 
   /**
-   * Parse mitmproxy output for blocked requests and highlight them
+   * Parse mitmproxy output for blocked requests and show notifications
    */
   private parseBlockedRequests(output: string): void {
-    // Look for [BLOCKED] pattern from our Python addon
+    // Look for [⛔ BLOCKED] pattern from our Python addon
     const lines = output.split('\n');
     for (const line of lines) {
-      if (line.includes('[BLOCKED]')) {
-        // Extract URL from log line
-        // Format: [BLOCKED] GET https://example.com/analytics
-        const match = line.match(/\[BLOCKED\]\s+(\w+)\s+(.+)/);
-        if (match) {
-          const method = match[1];
-          const url = match[2];
-
-          // Show in output with highlighting
-          this.outputChannel.appendLine(`⛔ BLOCKED: ${method} ${url}`);
-
-          // Optionally show notification
-          const config = vscode.workspace.getConfiguration('mitm-vscode');
-          if (config.get<boolean>('showBlockedNotifications', false)) {
+      if (line.includes('[⛔ BLOCKED]')) {
+        // Optionally show notification
+        const config = vscode.workspace.getConfiguration('mitm-vscode');
+        if (config.get<boolean>('showBlockedNotifications', false)) {
+          // Extract URL for notification
+          const match = line.match(/\[⛔ BLOCKED\]\s+(\w+)\s+(\S+)/);
+          if (match) {
+            const method = match[1];
+            const url = match[2];
             vscode.window.showInformationMessage(`Blocked: ${method} ${url}`, { modal: false });
           }
         }
@@ -636,28 +516,44 @@ export class ProxyManager {
 
   /**
    * Check if a port is already in use
+   * Uses efficient lsof/netstat instead of creating test server
    * Public method so extension.ts can use it
    */
   async checkPortInUse(port: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      const net = require('net');
-      const tester = net
-        .createServer()
-        .once('error', (err: Error & { code?: string }) => {
-          if (err.code === 'EADDRINUSE') {
-            resolve(true);
-          } else {
-            resolve(false);
-          }
-        })
-        .once('listening', () => {
-          tester
-            .once('close', () => {
-              resolve(false);
-            })
-            .close();
-        })
-        .listen(port); // Listen on 0.0.0.0 to match mitmproxy
-    });
+    try {
+      // Use lsof on Unix-like systems (more efficient than creating test server)
+      if (process.platform !== 'win32') {
+        const { execSync } = require('child_process');
+        try {
+          const output = execSync(`lsof -ti :${port} 2>/dev/null`, {
+            encoding: 'utf-8',
+            timeout: 1000,
+          });
+          return output.trim().length > 0;
+        } catch {
+          // lsof returns non-zero if no process found
+          return false;
+        }
+      }
+
+      // Fallback for Windows: use test server (only on Windows)
+      return new Promise((resolve) => {
+        const net = require('net');
+        const tester = net.createServer();
+
+        tester.once('error', (err: Error & { code?: string }) => {
+          resolve(err.code === 'EADDRINUSE');
+        });
+
+        tester.once('listening', () => {
+          tester.close(() => resolve(false));
+        });
+
+        tester.listen({ port, host: '0.0.0.0', exclusive: true });
+      });
+    } catch (error) {
+      // On error, assume not in use
+      return false;
+    }
   }
 }
