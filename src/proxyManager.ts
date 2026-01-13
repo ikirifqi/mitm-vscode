@@ -15,6 +15,9 @@ export class ProxyManager {
   private config: ProxyConfig | null = null;
   private context: vscode.ExtensionContext;
   private healthCheckInterval: NodeJS.Timeout | null = null;
+  private lastActivityTime: number = Date.now();
+  private activityCheckInterval: NodeJS.Timeout | null = null;
+  private proxyPid: number | null = null;
 
   constructor(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
     this.context = context;
@@ -23,13 +26,11 @@ export class ProxyManager {
 
   /**
    * Start health check polling
-   * Checks every 5 seconds if proxy is running, starts it if needed
+   * Checks every 5 seconds if proxy is running, detects orphaned processes
    */
   startHealthCheck(config: ProxyConfig): void {
-    // Clear any existing interval
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval);
-    }
+    // Clear any existing intervals to prevent leaks
+    this.stopHealthCheck();
 
     this.outputChannel.appendLine('[MITM] Starting health check (polls every 5 seconds)');
 
@@ -37,41 +38,72 @@ export class ProxyManager {
       try {
         const portInUse = await this.checkPortInUse(config.port);
 
-        if (!portInUse && !this.ownsProxy()) {
-          // Proxy is not running and we don't own it - need to start
-          this.outputChannel.appendLine(
-            '[MITM] ═══════════════════════════════════════════════════'
-          );
-          this.outputChannel.appendLine('[MITM] Health check: Proxy not running!');
-          this.outputChannel.appendLine('[MITM] This window is taking over proxy ownership');
-          this.outputChannel.appendLine(
-            '[MITM] ═══════════════════════════════════════════════════'
-          );
+        if (!portInUse) {
+          // Proxy is not running - start it
+          if (!this.ownsProxy()) {
+            this.outputChannel.appendLine(
+              '[MITM] ═══════════════════════════════════════════════════'
+            );
+            this.outputChannel.appendLine('[MITM] Health check: Proxy not running!');
+            this.outputChannel.appendLine('[MITM] This window is taking over proxy ownership');
+            this.outputChannel.appendLine(
+              '[MITM] ═══════════════════════════════════════════════════'
+            );
+            this.outputChannel.show(true);
 
-          // Show output channel when taking over
-          this.outputChannel.show(true);
+            const started = await this.startProxyProcess(config);
 
-          const started = await this.startProxyProcess(config);
+            if (started) {
+              this.outputChannel.appendLine('[MITM] ✓ This window now owns the proxy');
+              this.outputChannel.appendLine('[MITM] ✓ Proxy logs will appear here');
 
-          if (started) {
-            this.outputChannel.appendLine('[MITM] ✓ This window now owns the proxy');
-            this.outputChannel.appendLine('[MITM] ✓ Proxy logs will appear here');
+              vscode.window
+                .showInformationMessage(
+                  'MITM: This window took over proxy ownership',
+                  'Show Logs'
+                )
+                .then((action) => {
+                  if (action === 'Show Logs') {
+                    this.outputChannel.show(true);
+                  }
+                });
+            }
+          }
+        } else if (portInUse && !this.ownsProxy()) {
+          // Port is in use by another process - check if it's orphaned
+          const isOrphaned = await this.isProxyOrphaned(config.port);
 
-            // Show notification
-            vscode.window
-              .showInformationMessage(
-                'MITM: This window took over proxy ownership (previous window closed)',
+          if (isOrphaned) {
+            this.outputChannel.appendLine('[MITM] ═══════════════════════════════════════════════════');
+            this.outputChannel.appendLine('[MITM] Health check: Detected orphaned proxy!');
+            this.outputChannel.appendLine('[MITM] Original owner window closed but process still running');
+            this.outputChannel.appendLine('[MITM] Killing orphaned process and taking over...');
+            this.outputChannel.appendLine('[MITM] ═══════════════════════════════════════════════════');
+            this.outputChannel.show(true);
+
+            // Kill orphaned process
+            await this.killProcessOnPort(config.port);
+
+            // Wait a bit for port to be released
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            // Start new proxy
+            const started = await this.startProxyProcess(config);
+
+            if (started) {
+              this.outputChannel.appendLine('[MITM] ✓ Killed orphaned proxy and took ownership');
+              this.outputChannel.appendLine('[MITM] ✓ Proxy logs now appear here');
+
+              vscode.window.showInformationMessage(
+                'MITM: Restarted orphaned proxy - logs now in this window',
                 'Show Logs'
-              )
-              .then((action) => {
+              ).then((action) => {
                 if (action === 'Show Logs') {
                   this.outputChannel.show(true);
                 }
               });
+            }
           }
-        } else if (portInUse && !this.ownsProxy()) {
-          // Port is in use by another window - all good
-          // (silent - don't spam logs)
         } else if (this.ownsProxy()) {
           // We own the proxy - check if it's still alive
           if (!this.process || this.process.killed) {
@@ -84,6 +116,11 @@ export class ProxyManager {
         this.outputChannel.appendLine(`[MITM] Health check error: ${error}`);
       }
     }, 5000); // Check every 5 seconds
+
+    // Start idle timeout monitoring if configured
+    if (config.idleTimeout > 0) {
+      this.startIdleMonitoring(config.idleTimeout);
+    }
   }
 
   /**
@@ -95,6 +132,55 @@ export class ProxyManager {
       this.healthCheckInterval = null;
       this.outputChannel.appendLine('[MITM] Stopped health check');
     }
+
+    if (this.activityCheckInterval) {
+      clearInterval(this.activityCheckInterval);
+      this.activityCheckInterval = null;
+      this.outputChannel.appendLine('[MITM] Stopped idle monitoring');
+    }
+  }
+
+  /**
+   * Start idle timeout monitoring
+   * Stops proxy if no activity within configured minutes
+   */
+  private startIdleMonitoring(timeoutMinutes: number): void {
+    // Clear existing interval to prevent leaks
+    if (this.activityCheckInterval) {
+      clearInterval(this.activityCheckInterval);
+    }
+
+    this.lastActivityTime = Date.now();
+    this.outputChannel.appendLine(
+      `[MITM] Starting idle monitoring (timeout: ${timeoutMinutes} minutes)`
+    );
+
+    // Check every minute
+    this.activityCheckInterval = setInterval(() => {
+      const now = Date.now();
+      const idleMinutes = (now - this.lastActivityTime) / (1000 * 60);
+
+      if (idleMinutes >= timeoutMinutes && this.ownsProxy()) {
+        this.outputChannel.appendLine(
+          `[MITM] Idle timeout reached (${Math.floor(idleMinutes)} minutes of inactivity)`
+        );
+        this.outputChannel.appendLine('[MITM] Stopping proxy due to inactivity...');
+
+        // Stop proxy and health check
+        this.stop().then(() => {
+          vscode.window.showInformationMessage(
+            `MITM: Proxy stopped due to ${timeoutMinutes}min inactivity`
+          );
+        });
+      }
+    }, 60000); // Check every minute
+  }
+
+  /**
+   * Update last activity timestamp (called when proxy handles requests)
+   */
+  private updateActivity(): void {
+    this.lastActivityTime = Date.now();
   }
 
   /**
@@ -235,6 +321,9 @@ export class ProxyManager {
           const output = data.toString();
           this.outputChannel.append(output);
 
+          // Update activity timestamp
+          this.updateActivity();
+
           // Parse blocked request logs
           this.parseBlockedRequests(output);
         });
@@ -264,7 +353,11 @@ export class ProxyManager {
       });
 
       if (started) {
+        // Store PID for orphan detection
+        this.proxyPid = this.process?.pid || null;
+
         this.outputChannel.appendLine('[MITM] ✓ Proxy started successfully');
+        this.outputChannel.appendLine(`[MITM] ✓ Process PID: ${this.proxyPid}`);
         this.outputChannel.appendLine('[MITM] ✓ This window now owns the proxy process');
         this.outputChannel.appendLine(
           '[MITM] ✓ Proxy stdout/stderr will appear in this output channel'
@@ -329,6 +422,7 @@ export class ProxyManager {
     }
 
     this.config = null;
+    this.proxyPid = null;
   }
 
   /**
@@ -342,6 +436,78 @@ export class ProxyManager {
     }
 
     return false;
+  }
+
+  /**
+   * Check if proxy process is orphaned (owner window closed)
+   * An orphaned proxy has no VS Code window that owns it
+   */
+  private async isProxyOrphaned(port: number): Promise<boolean> {
+    try {
+      if (process.platform === 'win32') {
+        // Windows: harder to detect orphans, skip this check
+        return false;
+      }
+
+      // Get process info for port
+      const { execSync } = require('child_process');
+      const pidOutput = execSync(`lsof -ti :${port} 2>/dev/null || echo ""`, {
+        encoding: 'utf-8',
+      }).trim();
+
+      if (!pidOutput) {
+        return false; // No process on port
+      }
+
+      const pid = parseInt(pidOutput);
+
+      // Check if this PID has any VS Code parent
+      // If the proxy's parent VS Code window closed, proxy becomes orphaned
+      try {
+        const ppidOutput = execSync(`ps -o ppid= -p ${pid} 2>/dev/null || echo ""`, {
+          encoding: 'utf-8',
+        }).trim();
+
+        if (!ppidOutput) {
+          return true; // Can't find parent - likely orphaned
+        }
+
+        const ppid = parseInt(ppidOutput);
+
+        // Check if parent is still running and is a VS Code/Electron process
+        const parentName = execSync(`ps -o comm= -p ${ppid} 2>/dev/null || echo ""`, {
+          encoding: 'utf-8',
+        }).trim();
+
+        // If parent is not Electron/Code/node, it's orphaned
+        if (!parentName || (!parentName.includes('Electron') && !parentName.includes('Code') && !parentName.includes('node'))) {
+          return true;
+        }
+
+        return false;
+      } catch {
+        // Error checking parent - assume orphaned to be safe
+        return true;
+      }
+    } catch (error) {
+      // Can't determine - assume not orphaned
+      return false;
+    }
+  }
+
+  /**
+   * Kill process on specific port
+   */
+  private async killProcessOnPort(port: number): Promise<void> {
+    try {
+      if (process.platform !== 'win32') {
+        const { execSync } = require('child_process');
+        execSync(`lsof -ti :${port} | xargs kill -9 2>/dev/null || true`, { stdio: 'ignore' });
+        this.outputChannel.appendLine(`[MITM] Killed process on port ${port}`);
+      }
+    } catch (error) {
+      this.outputChannel.appendLine(`[MITM] Error killing process: ${error}`);
+    }
   }
 
   /**

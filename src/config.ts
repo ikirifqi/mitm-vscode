@@ -35,6 +35,7 @@ export class ConfigManager {
       responseStatus: config.get<number>('blockedResponseStatus', 204),
       responseBody: config.get<string>('blockedResponseBody', ''),
       logBlocked: config.get<boolean>('logBlocked', true),
+      idleTimeout: config.get<number>('idleTimeout', 60),
       mitmproxyPath: config.get<string>('mitmproxyPath', ''),
     };
   }
